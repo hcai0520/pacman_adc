@@ -28,4 +28,5 @@ vivado*.log
 /petalinux/trenz
 /petalinux/full
 /petalinux/ref
-
+.DS_Store
+ghdl/.DS_Store
