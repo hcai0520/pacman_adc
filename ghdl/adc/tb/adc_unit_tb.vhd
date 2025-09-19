@@ -2,7 +2,7 @@ library ieee;
 use std.textio.all;
 use ieee.numeric_std.all;
 use ieee.std_logic_1164.all;
-use IEEE.std_logic_textio.all;  -- use -fsynopsys or --std=08
+use IEEE.std_logic_textio.all;  -- use -fsynopsys or --std=08 
 library work;
 use work.common.all;
 
@@ -18,22 +18,22 @@ architecture behaviour of adc_unit_tb is
       -- REGBUS Ports
       S_REGBUS_RB_RUPDATE : in  std_logic;
       S_REGBUS_RB_RADDR	  : in  std_logic_vector(C_RB_ADDR_WIDTH-1 downto 0);
-      S_REGBUS_RB_RDATA	  : out std_logic_vector(C_RB_DATA_WIDTH-1 downto 0);
+      S_REGBUS_RB_RDATA	  : out std_logic_vector(C_RB_DATA_WIDTH-1 downto 0);      
       S_REGBUS_RB_RACK    : out std_logic;
-
+    
       S_REGBUS_RB_WUPDATE : in  std_logic;
       S_REGBUS_RB_WADDR	  : in  std_logic_vector(C_RB_ADDR_WIDTH-1 downto 0);
       S_REGBUS_RB_WDATA   : in  std_logic_vector(C_RB_DATA_WIDTH-1 downto 0);
       S_REGBUS_RB_WACK    : out std_logic;
 
       -- BRAM
-      BRAM_EN_O           : out std_logic;
+      BRAM_EN_O           : out std_logic; 
       BRAM_DATA_O         : out std_logic_vector(BRAM_DATA_WIDTH-1 downto 0);
       BRAM_WEN_O          : out std_logic_vector(3 downto 0);
       BRAM_ADDR_O         : out std_logic_vector(BRAM_ADDR_WIDTH-1 downto 0);
       BRAM_CLK_O          : out std_logic;
       BRAM_RST_O          : out std_logic;
-
+    
       -- ADC
       ADC_EN_O            : out std_logic;
       ADC_CLK_O           : out std_logic;
@@ -41,12 +41,12 @@ architecture behaviour of adc_unit_tb is
       ADC_DOF_I           : in  std_logic
     );
   end component;
-
+  
   signal count     : integer := 0;
   signal aclk      : std_logic;
   signal aresetn   : std_logic;
 
-  -- regbus
+  -- regbus 
   -- read signals:
   signal raddr   : std_logic_vector(C_RB_ADDR_WIDTH-1 downto 0) := (others => '0');
   signal rupdate : std_logic := '0';
@@ -58,12 +58,18 @@ architecture behaviour of adc_unit_tb is
   signal wdata   : std_logic_vector(C_RB_DATA_WIDTH-1 downto 0) := (others => '0');
   signal wack    : std_logic := '0';
 
-  -- daq
+  -- bram
   signal wen       : std_logic_vector(3 downto 0);
-  signal addr      : std_logic_vector(BRAM_ADDR_WIDTH-1 downto 0);
+  signal addr      : std_logic_vector(15 downto 0);
   signal do        : std_logic_vector(BRAM_DATA_WIDTH-1 downto 0);
+  signal b_clk     : std_logic;
+  signal b_rst     : std_logic;
+  signal b_en      : std_logic;
+  
   signal di        : std_logic_vector(ADC_DATA_WIDTH-1 downto 0);
   signal diof      : std_logic;
+
+ 
 
   -- adc
   signal adc_en    : std_logic;
@@ -82,11 +88,14 @@ begin
     S_REGBUS_RB_WUPDATE => wupdate,
     S_REGBUS_RB_WADDR   => waddr,
     S_REGBUS_RB_WDATA   => wdata,
-    S_REGBUS_RB_WACK    => wack,
+    S_REGBUS_RB_WACK    => wack, 
     ADC_DATA_I          => di,
     ADC_DOF_I           => diof,
+    BRAM_EN_O           => b_en,
+    BRAM_CLK_O          => b_clk,
+    BRAM_RST_O          => b_rst,
     BRAM_DATA_O         => do,
-    BRAM_ADDR_O         => addr,
+    BRAM_ADDR_O         => addr(BRAM_ADDR_WIDTH-1 downto 0),
     BRAM_WEN_O          => wen
   );
 
@@ -95,13 +104,13 @@ begin
   begin
     aresetn <= '0';
     wait for 12 ns;
-    aresetn <= '1';
+    aresetn <= '1';    
     wait;
   end process;
 
   aclk_process : process
   begin
-    count <= count + 1;
+    count <= count + 1;    
     aclk <= '1';
     wait for 5 ns;
     aclk <= '0';
@@ -112,84 +121,41 @@ begin
 write_process : process
   begin
     wait for 1 ns;
-    wait for 20 ns; -- testing mode 0
-    waddr   <= x"D118";
-    wdata   <= x"00000005";
-    wupdate <= '1';
-    wait for 40 ns; -- testing mode 1
-    waddr   <= x"D110";
-    wdata   <= x"00080013";
-    wupdate <= '1';
-    wait for 50 ns;
-    waddr   <= x"D118";
-    wdata   <= x"00000005";
-    wupdate <= '1';
-    wait for 50 ns;
-    waddr   <= x"D114";
-    wdata   <= x"00000002";
-    wupdate <= '1';
-    wait for 40 ns; -- testing mode 2
-    waddr   <= x"D110";
-    wdata   <= x"00040023";
-    wupdate <= '1';
-    wait for 50 ns;
-    waddr   <= x"D118";
-    wdata   <= x"00000007";
-    wupdate <= '1';
-    wait for 50 ns;
-    waddr   <= x"D114";
-    wdata   <= x"00000004";
-    wupdate <= '1';
-    wait for 30 ns; -- testing mode 3
-    waddr   <= x"D110";
-    wdata   <= x"00060030";
-    wupdate <= '1';
-    wait for 40 ns;
-    waddr   <= x"D114";
+    wait for 20 ns; -- Turn BRAM and ADC on
+    waddr   <= x"D000";
     wdata   <= x"00000003";
     wupdate <= '1';
-    wait for 30 ns;
-    waddr   <= x"D118";
-    wdata   <= x"00000001";
+    wait for 10 ns; 
+    waddr   <= x"D210"; --tells BRAM to use 8 addresses
+    wdata   <= x"00001008"; -- with 1 ADC word per address
     wupdate <= '1';
-    wait for 100 ns;
-    waddr   <= x"D114";
-    wdata   <= x"00000000";
+    wait for 10 ns;  
+    waddr   <= x"D204"; --sets the bounds on the test patterns(doesn't use them yet)
+    wdata   <= x"110010A0"; -- lower of 0x700 higher of 0x900
+    wupdate <= '1';
+    wait for 80 ns; 
+    waddr   <= x"D200"; -- starts using test patterns
+    wdata   <= x"0001BFF0"; -- wait of 1 clockcycle and step of 0x20
+    wupdate <= '1';
+    wait for 50 ns;
+    waddr   <= x"D210"; -- tells bram to use 4 addresses
+    wdata   <= x"00002004"; -- with 2 ADC words per address
     wupdate <= '1';
     wait;
   end process;
-
+  
   rapid_read_process : process
   begin
     raddr   <= x"0000";
     rupdate <= '0';
     wait for 42 ns;
-    raddr   <= x"D10C";
-    rupdate <= '1';
-    wait for 10 ns;
-    raddr   <= x"D100";
-    rupdate <= '1';
-    wait for 10 ns;
-    raddr   <= x"D104";
-    rupdate <= '1';
-    wait for 10 ns;
-    raddr   <= x"D110";
-    rupdate <= '1';
-    wait for 100 ns;
-    raddr   <= x"D100";
-    rupdate <= '1';
-    wait for 10 ns;
-    raddr   <= x"D10C";
-    rupdate <= '1';
+    raddr   <= x"D100"; --reads look
+    rupdate <= '1';     --should be one clockcycle ahead of output data
     wait for 30 ns;
-    raddr   <= x"D1FF";
-    rupdate <= '1';
-    wait for 10 ns;
-    raddr   <= x"D108";
-    rupdate <= '1';
-    wait for 10 ns;
-    raddr   <= x"0000";
-    rupdate <= '0';
+ 
+    raddr   <= x"D110"; -- what are we write out
+    rupdate <= '1';     -- should be one clockcycle behind output data
+ 
     wait;
   end process;
 
@@ -197,7 +163,7 @@ write_process : process
   begin
     di     <= x"000";
     diof   <= '0';
-    wait for 28 ns;
+    wait for 23 ns;
     di     <= x"111";
     diof   <= '0';
     wait for 10 ns;
@@ -211,16 +177,16 @@ write_process : process
     diof   <= '1';
     wait for 10 ns;
     di     <= x"555";
-    diof   <= '0';
+    diof   <= '0';  
     wait for 10 ns;
     di     <= x"666";
     diof   <= '0';
-    --wait for 10 ns;
-    --di     <= x"777";
-    --diof   <= '0';
-    --wait for 10 ns;
-    --di     <= x"888";
-    --diof   <= '1';
+    wait for 10 ns;
+    di     <= x"777";
+    diof   <= '0';   
+    wait for 10 ns;
+    di     <= x"888";
+    diof   <= '1';
     wait for 10 ns;
     di     <= x"999";
     diof   <= '0';
@@ -232,13 +198,13 @@ write_process : process
     diof   <= '0';
     wait for 10 ns;
     di     <= x"CCC";
-    diof   <= '1';
+    diof   <= '1';  
     wait for 10 ns;
     di     <= x"DDD";
     diof   <= '0';
     wait for 10 ns;
     di     <= x"EEE";
-    diof   <= '0';
+    diof   <= '0';  
     wait for 10 ns;
     di     <= x"FFF";
     diof   <= '0';
@@ -259,13 +225,13 @@ write_process : process
     diof   <= '0';
     wait for 10 ns;
     di     <= x"556";
-    diof   <= '0';
+    diof   <= '0';  
     wait for 10 ns;
     di     <= x"667";
     diof   <= '0';
     wait for 10 ns;
     di     <= x"778";
-    diof   <= '0';
+    diof   <= '0';   
     wait for 10 ns;
     di     <= x"889";
     diof   <= '1';
@@ -280,13 +246,13 @@ write_process : process
     diof   <= '0';
     wait for 10 ns;
     di     <= x"CCD";
-    diof   <= '0';
+    diof   <= '0';  
     wait for 10 ns;
     di     <= x"DDE";
     diof   <= '0';
     wait for 10 ns;
     di     <= x"EEF";
-    diof   <= '0';
+    diof   <= '0';  
     wait for 10 ns;
     di     <= x"FF0";
     diof   <= '0';
@@ -304,13 +270,45 @@ write_process : process
     diof   <= '1';
     wait for 10 ns;
     di     <= x"555";
-    diof   <= '0';
+    diof   <= '0';  
     wait for 10 ns;
     di     <= x"666";
     diof   <= '0';
     wait;
   end process;
 
-
+output_process : process
+    variable l : line;
+  begin
+    --wait for 1 ns;
+    if (count < 35) then
+      wait for 10 ns;
+    else
+      wait;
+    end if;
+    write (l, String'("c: "));
+    write (l, count, left, 4);
+    --write (l, String'("aclk: "));
+    --write (l, aclk);
+    --write (l, String'("valid: "));
+    --write (l, valid);
+  
+    write (l, String'(" | data_i: 0x"));
+    hwrite (l, di);
+    write (l, String'(" || bram_data_o: 0x"));
+    hwrite (l, do);
+    write (l, String'(" | bram_addr_o: 0x"));
+    hwrite (l, addr);
+    write (l, String'(" | bram_wen_o: 0x"));
+    hwrite (l, wen);
+    --write (l, String'(" | adc_status_o: 0x"));
+    --hwrite (l, stat);
+    --write (l, String'(" | adc_last_o: 0x"));
+    --hwrite (l, last);
+    if (aresetn = '0') then
+      write (l, String'(" (RESET)"));
+    end if;
+    writeline(output, l);
+  end process;
 
 end behaviour;

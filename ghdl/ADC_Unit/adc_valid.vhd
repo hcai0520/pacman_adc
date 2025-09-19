@@ -4,6 +4,8 @@ use ieee.numeric_std.all;
 library work;
 use work.common.all;
 
+--count the number of rising edge and falling edges from adc_trigger
+--supply a valid signal to adc_bram
 entity adc_valid is
   port (
     ACLK               : in  std_logic;

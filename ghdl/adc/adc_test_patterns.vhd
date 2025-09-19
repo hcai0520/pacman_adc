@@ -4,56 +4,45 @@ use ieee.numeric_std.all;
 library work;
 use work.common.all;
 
-entity adc_input_mux is
+
+
+
+entity adc_test_patterns is
   port(
     ACLK             : in  std_logic;
     ARESETN          : in  std_logic;
   
-    ADC_DATA_I       : in  std_logic_vector(ADC_DATA_WIDTH downto 0);
-    INT_DATA_O       : out std_logic_vector(ADC_DATA_WIDTH downto 0) := (others => '0');
+    --Test patterns (13 bits)
+    DATA_O       : out std_logic_vector((ADC_DATA_WIDTH +1)-1 downto 0) := (others => '0');
 
-    --ADC_EN_O         : out std_logic;
+    --Config_A determines the wait time and step of the test pattern
+    --Config_B determines the rang eof test pattern.   
+    CONFIG_A_I       : in  std_logic_vector(C_RB_DATA_WIDTH-1 downto 0);
+    CONFIG_B_I       : in  std_logic_vector(C_RB_DATA_WIDTH-1 downto 0)
 
-    --regbus
-    ADC_LOOK_O       : out std_logic_vector(C_RB_DATA_WIDTH-1 downto 0) := (others => '0');
-    ADC_TEST_RANGE_I : in  std_logic_vector(C_RB_DATA_WIDTH-1 downto 0);
-    ADC_CONFIG_I     : in  std_logic_vector(C_RB_DATA_WIDTH-1 downto 0)
     );
-end entity adc_input_mux;
+end entity adc_test_patterns;
 
-architecture behavioral of adc_input_mux is
+architecture behavioral of adc_test_patterns is
   signal clk      : std_logic;
   signal rst      : std_logic;
-  --signal adc_en   : std_logic := '0';
-  signal adc_data : std_logic_vector(12 downto 0) := (others => '0');
   signal wait_t   : std_logic_vector(15 downto 0) := (others => '0');
-  signal mode     : std_logic_vector(1  downto 0) := (others => '0');
   signal step     : std_logic_vector(12 downto 0) := (others => '0');
   signal higher   : std_logic_vector(12 downto 0) := (others => '0');
   signal lower    : std_logic_vector(12 downto 0) := (others => '0');
-  signal int_data : std_logic_vector(12 downto 0) := (others => '0');    
+  signal int_data : std_logic_vector(12 downto 0) := (others => '0');  
+
+
 begin
   clk      <= ACLK;
   rst      <= not ARESETN;
-  
-  higher   <= ADC_TEST_RANGE_I(28 downto 16);
-  lower    <= ADC_TEST_RANGE_I(12 downto  0);
+  wait_t   <= CONFIG_A_I(31 downto 16);
+  step     <= CONFIG_A_I(12 downto  0);
+  higher   <= CONFIG_B_I(28 downto 16);
+  lower    <= CONFIG_B_I(12 downto  0);
+  DATA_O   <= int_data;
 
-  wait_t   <= ADC_CONFIG_I(31 downto 16);
-  --ADC_EN_O <= ADC_CONFIG_I(15);
-  mode     <= ADC_CONFIG_I(14 downto 13);
-  step     <= ADC_CONFIG_I(12 downto  0);
 
-  INT_DATA_O <= int_data;
-
-  process(clk)
-    begin
-    if (falling_edge(clk)) then
-      adc_data <= ADC_DATA_I;
-    elsif (rising_edge(clk)) then
-      ADC_LOOK_O(ADC_DATA_WIDTH downto 0) <= adc_data;      
-    end if;
-  end process;
 
   process(clk,rst)
     variable counter : integer := 0;
@@ -64,9 +53,6 @@ begin
       value    := unsigned(lower);
       counter  := 0;
     elsif (rising_edge(clk)) then
-      if (mode = "00") then
-        int_data <= adc_data;
-      elsif (mode = "01") then
         if (counter < unsigned(wait_t)) then
           counter := counter + 1;
         else
@@ -88,9 +74,6 @@ begin
             int_data(10 downto 0) <= std_logic_vector(value(10 downto 0));
           end if;
         end if;
-      else
-        int_data <= (others => '0');
-      end if;
     end if;
   end process;
       

@@ -4,6 +4,11 @@ use ieee.numeric_std.all;
 library work;
 use work.common.all;
 
+
+--create rising and falling signal from adc_input_mux
+--rising edge when state "01" and current "11"
+--falling edge when state "11" and current "01" 
+
 entity adc_trigger is
   port (
     ACLK              : in  std_logic;
@@ -53,7 +58,7 @@ begin
     else
       low  := unsigned(thresh) - unsigned(swing);
     end if;
-    if (unsigned(not thresh) < unsigned(swing)) then -- if upperbound is overflow
+    if (unsigned(not thresh) < unsigned(swing)) then -- if upperbound is overflow; not thresh = 2^n - 1 - thresh (n is bits)
       high := x"FFF";
     else
       high := unsigned(thresh) + unsigned(swing);

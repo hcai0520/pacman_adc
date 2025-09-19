@@ -75,7 +75,7 @@ begin
   config_in : process
   begin
     wait for 18 ns;
-    test_range <= x"11000F00";
+    test_range <= x"110010A0";
     config     <= x"00008000";
     wait for 70 ns;
     config     <= x"0001BFF0";
@@ -206,25 +206,25 @@ begin
     variable l : line;
   begin
     --wait for 1 ns;
-    if (count < 15) then
+    if (count < 70) then
       wait for 10 ns;
     else
       wait;
     end if;
-    write (l, String'("c: "));
-    write (l, count, left, 4);
+    --write (l, String'("c: "));
+    --write (l, count, left, 4);
     --write (l, String'("aclk: "));
     --write (l, aclk);
     --write (l, String'(" | adc_test_range_i: 0x"));
     --hwrite (l, test_range);
-    write (l, String'(" adc_config_i: 0x"));
-    hwrite (l, config);
-    write (l, String'(" | adc_data_i: 0x"));
-    hwrite (l, data_i);
-    write (l, String'(" || int_data_o: 0x"));
+    --write (l, String'(" adc_config_i: 0x"));
+    --hwrite (l, config);
+    --write (l, String'(" | adc_data_i: 0x"));
+    --hwrite (l, data_i);
+    --write (l, String'(" || int_data_o: 0x"));
     hwrite (l, data_o);
-    write (l, String'(" | adc_look_o: 0x"));
-    hwrite (l, look);
+    --write (l, String'(" | adc_look_o: 0x"));
+    --hwrite (l, look);
     if (aresetn = '0') then
       write (l, String'(" (RESET)"));
     end if;

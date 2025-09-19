@@ -30,3 +30,4 @@ vivado*.log
 /petalinux/ref
 .DS_Store
 ghdl/.DS_Store
+ghdl/ADC_Unit

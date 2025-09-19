@@ -6,100 +6,68 @@ use IEEE.std_logic_textio.all;  -- use -fsynopsys or --std=08
 library work;
 use work.common.all;
 
-entity adc_unit_tb is
-end adc_unit_tb;
-
-architecture behaviour of adc_unit_tb is
-  component adc_unit is
+--  Defines a testbench (without any ports)
+entity adc_bram_tb is
+end adc_bram_tb;
+     
+architecture behaviour of adc_bram_tb is
+  component adc_bram is
     port (
-      ACLK	          : in std_logic;
-      ARESETN	          : in std_logic;
+    ACLK           : in  std_logic;
+    ARESETN        : in  std_logic;
 
-      -- REGBUS Ports
-      S_REGBUS_RB_RUPDATE : in  std_logic;
-      S_REGBUS_RB_RADDR	  : in  std_logic_vector(C_RB_ADDR_WIDTH-1 downto 0);
-      S_REGBUS_RB_RDATA	  : out std_logic_vector(C_RB_DATA_WIDTH-1 downto 0);      
-      S_REGBUS_RB_RACK    : out std_logic;
-    
-      S_REGBUS_RB_WUPDATE : in  std_logic;
-      S_REGBUS_RB_WADDR	  : in  std_logic_vector(C_RB_ADDR_WIDTH-1 downto 0);
-      S_REGBUS_RB_WDATA   : in  std_logic_vector(C_RB_DATA_WIDTH-1 downto 0);
-      S_REGBUS_RB_WACK    : out std_logic;
+    DATA_I         : in  std_logic_vector(ADC_DATA_WIDTH downto 0);
+    BRAM_EN_I      : in std_logic; 
 
-      -- BRAM
-      BRAM_EN_O           : out std_logic; 
-      BRAM_DATA_O         : out std_logic_vector(BRAM_DATA_WIDTH-1 downto 0);
-      BRAM_WEN_O          : out std_logic_vector(3 downto 0);
-      BRAM_ADDR_O         : out std_logic_vector(BRAM_ADDR_WIDTH-1 downto 0);
-      BRAM_CLK_O          : out std_logic;
-      BRAM_RST_O          : out std_logic;
+
+    -- REGISTER
+    CONFIG_I       : in  std_logic_vector(C_RB_DATA_WIDTH-1 downto 0);
+    STATUS_O       : out std_logic_vector(C_RB_DATA_WIDTH-1 downto 0);
+    LAST_O         : out std_logic_vector(C_RB_DATA_WIDTH-1 downto 0);
     
-      -- ADC
-      ADC_EN_O            : out std_logic;
-      ADC_CLK_O           : out std_logic;
-      ADC_DATA_I          : in  std_logic_vector(ADC_DATA_WIDTH-1 downto 0);
-      ADC_DOF_I           : in  std_logic
+    -- BRAM
+    --bram enable out is determined by bram enable in (from time resigsters) and valid. 
+    BRAM_EN_O      : out std_logic;
+    BRAM_DATA_O    : out std_logic_vector(BRAM_DATA_WIDTH-1 downto 0);
+    BRAM_WEN_O     : out std_logic_vector(3 downto 0);
+    BRAM_ADDR_O    : out std_logic_vector(BRAM_ADDR_WIDTH-1 downto 0);
+    BRAM_CLK_O     : out std_logic;
+    BRAM_RST_O     : out std_logic
     );
   end component;
-  
   signal count     : integer := 0;
   signal aclk      : std_logic;
   signal aresetn   : std_logic;
-
-  -- regbus 
-  -- read signals:
-  signal raddr   : std_logic_vector(C_RB_ADDR_WIDTH-1 downto 0) := (others => '0');
-  signal rupdate : std_logic := '0';
-  signal rdata   : std_logic_vector(C_RB_DATA_WIDTH-1 downto 0);
-  signal rack    : std_logic := '0';
-  -- write signals:
-  signal waddr   : std_logic_vector(C_RB_ADDR_WIDTH-1 downto 0) := (others => '0');
-  signal wupdate : std_logic := '0';
-  signal wdata   : std_logic_vector(C_RB_DATA_WIDTH-1 downto 0) := (others => '0');
-  signal wack    : std_logic := '0';
-
-  -- bram
+  signal bram_en   :std_logic :='1';
+  signal data_i    : std_logic_vector(15 downto 0);
+  signal di        : std_logic_vector(ADC_DATA_WIDTH-1 downto 0) := (others => '0');
+  signal diof      : std_logic := '0';
+  signal config    : std_logic_vector(C_RB_DATA_WIDTH-1 downto 0) := (others => '0');
+  signal stat      : std_logic_vector(C_RB_DATA_WIDTH-1 downto 0);
+  signal last      : std_logic_vector(C_RB_DATA_WIDTH-1 downto 0);
   signal wen       : std_logic_vector(3 downto 0);
-  signal addr      : std_logic_vector(BRAM_ADDR_WIDTH-1 downto 0);
+  signal addr      : std_logic_vector(15 downto 0);
   signal do        : std_logic_vector(BRAM_DATA_WIDTH-1 downto 0);
-  signal b_clk     : std_logic;
-  signal b_rst     : std_logic;
-  signal b_en      : std_logic;
-  
-  signal di        : std_logic_vector(ADC_DATA_WIDTH-1 downto 0);
-  signal diof      : std_logic;
-
- 
-
-  -- adc
-  signal adc_en    : std_logic;
-  signal adc_clk   : std_logic;
 
 begin
-  uut: adc_unit port map (
-    ADC_EN_O       => adc_en,
-    ADC_CLK_O      => adc_clk,
-    ACLK           => aclk,
-    ARESETN        => aresetn,
-    S_REGBUS_RB_RUPDATE => rupdate,
-    S_REGBUS_RB_RADDR   => raddr,
-    S_REGBUS_RB_RDATA   => rdata,
-    S_REGBUS_RB_RACK    => rack,
-    S_REGBUS_RB_WUPDATE => wupdate,
-    S_REGBUS_RB_WADDR   => waddr,
-    S_REGBUS_RB_WDATA   => wdata,
-    S_REGBUS_RB_WACK    => wack, 
-    ADC_DATA_I          => di,
-    ADC_DOF_I           => diof,
-    BRAM_EN_O           => b_en,
-    BRAM_CLK_O          => b_clk,
-    BRAM_RST_O          => b_rst,
-    BRAM_DATA_O         => do,
-    BRAM_ADDR_O         => addr,
-    BRAM_WEN_O          => wen
-  );
+  uut: adc_bram port map (
+      ACLK          => aclk,
+      ARESETN       => aresetn,
+      BRAM_EN_O     => bram_en,
+      DATA_I        => data_i(12 downto 0),
+      BRAM_EN_I     => '1',
+      CONFIG_I      => config,
+      STATUS_O      => stat,
+      LAST_O        => last,
+      BRAM_DATA_O   => do,
+      BRAM_WEN_O    => wen,
+      BRAM_ADDR_O   => addr(BRAM_ADDR_WIDTH-1 downto 0)
+      );
 
-
+  data_i(11 downto 0)  <= di;
+  data_i(12)           <= diof;
+  data_i(15 downto 13) <= (others => '0');
+  
   aresetn_process : process
   begin
     aresetn <= '0';
@@ -107,7 +75,7 @@ begin
     aresetn <= '1';    
     wait;
   end process;
-
+  
   aclk_process : process
   begin
     count <= count + 1;    
@@ -117,41 +85,16 @@ begin
     wait for 5 ns;
   end process;
 
-
-write_process : process
+  config_in : process
   begin
-    wait for 1 ns;
-    wait for 20 ns; -- Turn BRAM and ADC on
-    waddr   <= x"D000";
-    wdata   <= x"00000003";
-    wupdate <= '1';
-    wait for 10 ns; 
-    waddr   <= x"D210"; --tells BRAM to use 8 addresses
-    wdata   <= x"00001008"; -- with 1 ADC word per address
-    wupdate <= '1';
-
-    wait for 80 ns; 
-    waddr   <= x"D200"; -- starts using test patterns
-    wdata   <= x"00012020"; -- wait of 1 clockcycle and step of 0x20
-    wupdate <= '1';
-    wait for 50 ns;
-    waddr   <= x"D210"; -- tells bram to use 4 addresses
-    wdata   <= x"00002004"; -- with 2 ADC words per address
-    wupdate <= '1';
-    wait;
-  end process;
-  
-  rapid_read_process : process
-  begin
-    raddr   <= x"0000";
-    rupdate <= '0';
-    wait for 42 ns;
-    raddr   <= x"D100"; --reads look
-    rupdate <= '1';     --should be one clockcycle ahead of output data
-    
-    wait for 40 ns;
-    raddr   <= x"D110"; -- what are we write out
-    rupdate <= '1';     -- should be one clockcycle behind output data
+    wait for 18 ns;
+   -- config <= x"00010010";
+   -- wait for 30 ns;
+   -- config <= x"00011008";
+   -- wait for 100 ns;
+   -- config <= x"00012004";
+   -- wait for 100 ns;
+    config <= x"00013002";
     wait;
   end process;
 
@@ -159,7 +102,7 @@ write_process : process
   begin
     di     <= x"000";
     diof   <= '0';
-    wait for 23 ns;
+    wait for 18 ns;
     di     <= x"111";
     diof   <= '0';
     wait for 10 ns;
@@ -170,7 +113,7 @@ write_process : process
     diof   <= '0';
     wait for 10 ns;
     di     <= x"444";
-    diof   <= '1';
+    diof   <= '0';
     wait for 10 ns;
     di     <= x"555";
     diof   <= '0';  
@@ -182,7 +125,7 @@ write_process : process
     diof   <= '0';   
     wait for 10 ns;
     di     <= x"888";
-    diof   <= '1';
+    diof   <= '0';
     wait for 10 ns;
     di     <= x"999";
     diof   <= '0';
@@ -273,11 +216,11 @@ write_process : process
     wait;
   end process;
 
-output_process : process
+  output_process : process
     variable l : line;
   begin
     --wait for 1 ns;
-    if (count < 15) then
+    if (count < 25) then
       wait for 10 ns;
     else
       wait;
@@ -309,4 +252,5 @@ output_process : process
   end process;
 
 
+  
 end behaviour;

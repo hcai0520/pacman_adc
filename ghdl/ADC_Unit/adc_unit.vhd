@@ -6,19 +6,19 @@ use work.common.all;
 
 entity adc_unit is
   port (
-    ACLK	        : in std_logic;
-    ARESETN	        : in std_logic;
+    ACLK	               : in std_logic;
+    ARESETN	             : in std_logic;
 
     -- REGBUS Ports
-    S_REGBUS_RB_RUPDATE : in  std_logic;
-    S_REGBUS_RB_RADDR	: in  std_logic_vector(C_RB_ADDR_WIDTH-1 downto 0);
-    S_REGBUS_RB_RDATA	: out std_logic_vector(C_RB_DATA_WIDTH-1 downto 0);      
-    S_REGBUS_RB_RACK    : out std_logic;
+    S_REGBUS_RB_RUPDATE  : in  std_logic;
+    S_REGBUS_RB_RADDR	   : in  std_logic_vector(C_RB_ADDR_WIDTH-1 downto 0);
+    S_REGBUS_RB_RDATA	   : out std_logic_vector(C_RB_DATA_WIDTH-1 downto 0);      
+    S_REGBUS_RB_RACK     : out std_logic;
     
-    S_REGBUS_RB_WUPDATE : in  std_logic;
-    S_REGBUS_RB_WADDR	: in  std_logic_vector(C_RB_ADDR_WIDTH-1 downto 0);
-    S_REGBUS_RB_WDATA	: in  std_logic_vector(C_RB_DATA_WIDTH-1 downto 0);
-    S_REGBUS_RB_WACK    : out std_logic;
+    S_REGBUS_RB_WUPDATE  : in  std_logic;
+    S_REGBUS_RB_WADDR	   : in  std_logic_vector(C_RB_ADDR_WIDTH-1 downto 0);
+    S_REGBUS_RB_WDATA	   : in  std_logic_vector(C_RB_DATA_WIDTH-1 downto 0);
+    S_REGBUS_RB_WACK     : out std_logic;
 
     -- BRAM
     BRAM_EN_O           : out std_logic; 
@@ -185,8 +185,8 @@ architecture behavioral of adc_unit is
   adc_data(ADC_DATA_WIDTH)             <= ADC_DOF_I;
   
   regbus: adc_registers port map (
-      ACLK           => ACLK,
-      ARESETN        => ARESETN,
+      ACLK                => ACLK,
+      ARESETN             => ARESETN,
       S_REGBUS_RB_RUPDATE => S_REGBUS_RB_RUPDATE,
       S_REGBUS_RB_RADDR   => S_REGBUS_RB_RADDR,
       S_REGBUS_RB_RDATA   => S_REGBUS_RB_RDATA,
