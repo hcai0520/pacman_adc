@@ -365,26 +365,37 @@ void pulse_dac(){
 #define ADDR_AXIL_REGS  0x40000000
 
 
-void read_global_registers(){
+void read_ADC_registers(){
   //Xil_Out32(ADDR_AXIL_REGS+0xFF20, 0x001103FF);
   //Xil_Out32(ADDR_AXIL_REGS+0xD100, 0x000000FF);
   xil_printf("Enables  -- 0x%x  \r\n", Xil_In32(ADDR_AXIL_REGS+0xFF20));
   xil_printf("Global Look  -- 0x%x  \r\n", Xil_In32(ADDR_AXIL_REGS+0xFF40));
-  xil_printf("ADC status   -- 0x%x  \r\n", Xil_In32(ADDR_AXIL_REGS+0xD100));
-  xil_printf("ADC look     -- 0x%x  \r\n", Xil_In32(ADDR_AXIL_REGS+0xD104));
-  xil_printf("ADC last     -- 0x%x  \r\n", Xil_In32(ADDR_AXIL_REGS+0xD108));
+  //xil_printf("ADC status   -- 0x%x  \r\n", Xil_In32(ADDR_AXIL_REGS+0xD100));
+  xil_printf("ADC look     -- 0x%x  \r\n", Xil_In32(ADDR_AXIL_REGS+0xD100));
+  xil_printf("ADC last     -- 0x%x  \r\n", Xil_In32(ADDR_AXIL_REGS+0xD110));
   xil_printf("ADC state    -- 0x%x  \r\n", Xil_In32(ADDR_AXIL_REGS+0xD10C));
-  xil_printf("ADC config   -- 0x%x  \r\n", Xil_In32(ADDR_AXIL_REGS+0xD110));
-  xil_printf("ADC clkpar   -- 0x%x  \r\n", Xil_In32(ADDR_AXIL_REGS+0xD114));
-  xil_printf("ADC scratch  -- 0x%x  \r\n", Xil_In32(ADDR_AXIL_REGS+0xD200));
-  xil_printf("ADC roa      -- 0x%x  \r\n", Xil_In32(ADDR_AXIL_REGS+0xD204));
+  xil_printf("ADC config a   -- 0x%x  \r\n", Xil_In32(ADDR_AXIL_REGS+0xD200));
+  xil_printf("ADC config b   -- 0x%x  \r\n", Xil_In32(ADDR_AXIL_REGS+0xD204));
+  xil_printf("ADC scratch  -- 0x%x  \r\n", Xil_In32(ADDR_AXIL_REGS+0xD300));
+  xil_printf("ADC roa      -- 0x%x  \r\n", Xil_In32(ADDR_AXIL_REGS+0xD304));
+  xil_printf("BRAM config      -- 0x%x  \r\n", Xil_In32(ADDR_AXIL_REGS+0xD210));
 }
 
 
 void set_adc_mode_to_run(){
   Xil_Out32(ADDR_AXIL_REGS+0xD118, 0x2);
 }
+void set_bram_to_run(){
+  Xil_Out32(ADDR_AXIL_REGS+0xD118, 0x1);
+  static int mode = 0;
+  mode = (mode + 1) % 2;
 
+  if (mode == 0) {
+    Xil_Out32(ADDR_AXIL_REGS + 0xD210, (1 << 12) | (1023 & 0x7FF));
+  } else {
+    Xil_Out32(ADDR_AXIL_REGS + 0xD210, (0 << 12) | (1023 & 0x7FF));
+  }
+}
 void toggle_enables(){
   static int mode = 0;
   mode = (mode + 1) % 2;
@@ -414,66 +425,71 @@ void toggle_adc_sleep(){
 
 void poke_timing();
 
-void toggle_adc_circular_buffer(){
-  static int mode = 0;
-  mode = (mode + 1) % 2;
-  unsigned config = 0;
-  if (mode == 0) {
-    poke_timing();
-    usleep(1);
-    config = 0x00000000;
-  } else {
-    config = 0x10000013;
-  }
-  xil_printf("setting ADC config to %x \r\n", config);
-  Xil_Out32(ADDR_AXIL_REGS+0xD110, config);
-}
+//void toggle_adc_circular_buffer(){
+//  static int mode = 0;
+//  mode = (mode + 1) % 2;
+//  unsigned config = 0;
+//  if (mode == 0) {
+//    poke_timing();
+//    usleep(1);
+//    config = 0x00000000;
+//  } else {
+//    config = 0x10000013;
+//  }
+//  xil_printf("setting ADC config to %x \r\n", config);
+//  Xil_Out32(ADDR_AXIL_REGS+0xD110, config);
+//}
 
 
-void toggle_adc_trigger(){
-  static int mode = 0;
-  mode = (mode + 1) % 2;
-  unsigned config = 0;
-  if (mode == 0) {
-    config = 0x00000000;
-  } else {
-    config = 0x10000013;
-  }
-  xil_printf("setting ADC config to %x \r\n", config);
-  Xil_Out32(ADDR_AXIL_REGS+0xD110, config);
+//void toggle_adc_trigger(){
+//  static int mode = 0;
+//  mode = (mode + 1) % 2;
+//  unsigned config = 0;
+//  if (mode == 0) {
+//    config = 0x00000000;
+//  } else {
+//    config = 0x10000013;
+//  }
+//  xil_printf("setting ADC config to %x \r\n", config);
+//  Xil_Out32(ADDR_AXIL_REGS+0xD200, config);
 
-  if (mode == 1){
-    usleep(100000);
-    config = 0x10000033;
-  }
-  xil_printf("setting ADC config to %x \r\n", config);
-  Xil_Out32(ADDR_AXIL_REGS+0xD110, config);
+ // if (mode == 1){
+ //   usleep(100000);
+ //   config = 0x10000033;
+ // }
+ // xil_printf("setting ADC config to %x \r\n", config);
+ // Xil_Out32(ADDR_AXIL_REGS+0xD200, config);
 
-}
+//}
 
 void toggle_adc_patterns(){
   static int mode = 0;
-  mode = (mode + 1) % 6;
+  mode = (mode + 1) % 3;
   unsigned config = 0;
   if (mode == 0) {
     config = 0x00000000;
   } else if (mode == 1) {
-    config = 0x000000A3;
+    config = 0x0001BFF0;
   }  else if (mode == 2) {
-    config = 0x000403B3;
-  } else if (mode == 3) {
-    config = 0x00080FB3;
-  } else if (mode == 4) {
-    config = 0x000CABC3;
-  } else if (mode == 5) {
-    config = 0x000C12C3;
+    config = 0x0001AFF0;
+  //} else if (mode == 3) {
+  //  config = 0x00080FB3;
+  //} else if (mode == 4) {
+  //  config = 0x000CABC3;
+  //} else if (mode == 5) {
+  //  config = 0x000C12C3;
   } else {
     return;
   }
+  Xil_Out32(ADDR_AXIL_REGS+0xD200, config);
+  Xil_Out32(ADDR_AXIL_REGS+0xD204, 0x110010A0);
   xil_printf("setting ADC config to %x \r\n", config);
-  Xil_Out32(ADDR_AXIL_REGS+0xD110, config);
+  xil_printf("setting ADC test range to %x \r\n", 0x110010A0);
 }
+//void set_bram_config(){
+//  Xil_Out32(ADDR_AXIL_REGS + 0xD210, (1 << 12) | (1023 & 0x7FF));
 
+//}
 void toggle_dcache(){
   static int mode = 0;
   mode = (mode + 1) % 2;
@@ -494,15 +510,17 @@ void write_bram(){
 }
 
 void read_bram(){
-  unsigned size = 1024;
-  unsigned status = Xil_In32(ADDR_AXIL_REGS+0xD100);
-  unsigned ladr = (status & 0xFFFF);
+  //unsigned size = 1024;
+  unsigned cfg     = Xil_In32(ADDR_AXIL_REGS + 0xD210);
+  unsigned size    = (cfg & 0x7FF) + 1; 
+  unsigned status = Xil_In32(ADDR_AXIL_REGS+0xD10C);
+  unsigned ladr =  (status & 0x7FF);
   xil_printf("BRAM status     -- 0x%x  \r\n", status);
   xil_printf("BRAM ladr       -- 0x%x  \r\n", ladr);
   xil_printf("BRAM size       -- 0x%x  \r\n", size);
 
   for (int i=0; i<size; i++){
-    unsigned offset = 4*((ladr/4 + 1 + i) % size);
+    unsigned offset = 4*((ladr + 1 + i) % size);
     xil_printf("0x%x, ", Xil_In32(XPAR_BRAM_0_BASEADDR+offset));
     if ((i+1)%10==0)
       xil_printf("\r\n");
@@ -662,7 +680,7 @@ int main(){
     xil_printf("choose an option:\r\n");
     xil_printf("(1) blink LEDS (2) read global registers (3) toggle enables\r\n");
     xil_printf("(4) check iic (5) toggle MUX (6) toggle DAC (7) pulse DAC\r\n");
-    xil_printf("(8) enable ADC (9) toggle ADC circular buffer (a) toggle ADC trigger mode (b) toggle ADC patterns \r\n");
+    xil_printf("(8) enable ADC (9) enable bram (b) toggle ADC patterns \r\n");
     xil_printf("(c) read BRAM  (d) write BRAM (e) toggle VDDD/VDDA voltages \r\n");
     xil_printf("(f) read timing registers (g) toggle counts (h) toggle ATC config (i) poke ATC \r\n");
     xil_printf("(j) set ADC mode to run \r\n");
@@ -674,7 +692,7 @@ int main(){
       blink();
       break;
     case '2':
-      read_global_registers();
+      read_ADC_registers();
       break;
     case '3':
       toggle_enables();
@@ -695,11 +713,12 @@ int main(){
       toggle_adc_sleep();
       break;
     case '9':
-      toggle_adc_circular_buffer();
+      set_bram_to_run()
+//      toggle_adc_circular_buffer();
       break;
-    case 'a':
-      toggle_adc_trigger();
-      break;
+//    case 'a':
+//     toggle_adc_trigger();
+//      break;
     case 'b':
       toggle_adc_patterns();
       break;
