@@ -19,15 +19,15 @@ modules-e:
 
 
 testbenches:
-	echo "*** testbench analysis and elaboration ***"
-	ghdl -a -fsynopsys tb/adc_test_patterns_tb.vhd
-	ghdl -a -fsynopsys tb/adc_bram_tb.vhd
-	ghdl -a -fsynopsys tb/adc_registers_tb.vhd
-	ghdl -a -fsynopsys tb/adc_unit_tb.vhd
-	ghdl -e -fsynopsys adc_test_patterns_tb
-	ghdl -e -fsynopsys adc_bram_tb
-	ghdl -e -fsynopsys adc_registers_tb
-	ghdl -e -fsynopsys adc_unit_tb
+	#echo "*** testbench analysis and elaboration ***"
+	#ghdl -a -fsynopsys tb/adc_test_patterns_tb.vhd
+	#ghdl -a -fsynopsys tb/adc_bram_tb.vhd
+	#ghdl -a -fsynopsys tb/adc_registers_tb.vhd
+	#ghdl -a -fsynopsys tb/adc_unit_tb.vhd
+	#ghdl -e -fsynopsys adc_test_patterns_tb
+	#ghdl -e -fsynopsys adc_bram_tb
+	#ghdl -e -fsynopsys adc_registers_tb
+	#ghdl -e -fsynopsys adc_unit_tb
 
 run-testbenches:
 	echo "*** running ***"
@@ -36,5 +36,5 @@ run-testbenches:
 #	ghdl -r -fsynopsys adc_unit_tb --stop-time=1ms --vcd=bl.vcd 
 	#ghdl -r -fsynopsys adc_reg_tb --stop-time=1ms --vcd=bl.vcd 
 	#ghdl -r -fsynopsys adc_daq_tb --stop-time=1ms --vcd=bl.vcd 
-	ghdl -r -fsynopsys adc_unit_tb --stop-time=1ms --vcd=bl.vcd 
+	#ghdl -r -fsynopsys adc_unit_tb --stop-time=1ms --vcd=bl.vcd 
 

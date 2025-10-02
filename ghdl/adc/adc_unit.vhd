@@ -73,7 +73,8 @@ architecture behavioral of adc_unit is
       TESTPATTERN_CONFIG_B_O     : out std_logic_vector(C_RB_DATA_WIDTH-1 downto 0);
     --ADC_TRIG_CONFIG_O   : out std_logic_vector(C_RB_DATA_WIDTH-1 downto 0);
     --ADC_VALID_CONFIG_O  : out std_logic_vector(C_RB_DATA_WIDTH-1 downto 0);
-      BRAM_CONFIG_O       : out std_logic_vector(C_RB_DATA_WIDTH-1 downto 0)
+      BRAM_CONFIG_O              : out std_logic_vector(C_RB_DATA_WIDTH-1 downto 0);
+      FAKE_ADC_O                 : out std_logic_vector(C_RB_DATA_WIDTH-1 downto 0) 
     );
   end component;
 
@@ -93,6 +94,8 @@ architecture behavioral of adc_unit is
     port(
       ACLK           : in  std_logic;
       ARESETN        : in  std_logic;
+
+      FAKE_ADC_I     : in std_logic_vector(C_RB_DATA_WIDTH-1 downto 0); 
 
       --VALID_I        : in  std_logic;
       DATA_I     : in  std_logic_vector(ADC_DATA_WIDTH downto 0);
@@ -144,6 +147,7 @@ architecture behavioral of adc_unit is
 --  signal fall_edge : std_logic;
 --  signal valid     : std_logic;
   
+  signal fake_adc : std_logic_vector(C_RB_DATA_WIDTH-1 downto 0) := (others => '0');
 
 
 
@@ -181,9 +185,10 @@ architecture behavioral of adc_unit is
 
       TESTPATTERN_CONFIG_A_O    => test_pattern_config_a,
       TESTPATTERN_CONFIG_B_O    => test_pattern_config_b,
-      --ADC_TRIG_CONFIG_O   => trig_config, 
-      --ADC_VALID_CONFIG_O  => valid_config,
-      BRAM_CONFIG_O       => bram_config  
+      --ADC_TRIG_CONFIG_O       => trig_config, 
+      --ADC_VALID_CONFIG_O      => valid_config,
+      BRAM_CONFIG_O             => bram_config,
+      FAKE_ADC_O                => fake_adc  
       
       );
 
@@ -203,22 +208,23 @@ architecture behavioral of adc_unit is
   
 
   bram: adc_bram port map (
-    ACLK           => ACLK,
-    ARESETN        => ARESETN,
+    ACLK             => ACLK,
+    ARESETN          => ARESETN,
     --VALID_I        => valid,
-    DATA_I         => data,
-    BRAM_EN_I      => bram_en,
-    CONFIG_I       => bram_config,
-    
-    STATUS_O       => status,
-    LAST_O         => last_w,
+    DATA_I           => data,
+    BRAM_EN_I        => bram_en,
+    CONFIG_I         => bram_config,
+    FAKE_ADC_I       => fake_adc,
 
-    BRAM_EN_O      => BRAM_EN_O,
-    BRAM_DATA_O    => BRAM_DATA_O,
-    BRAM_WEN_O     => BRAM_WEN_O,
-    BRAM_ADDR_O    => BRAM_ADDR_O,
-    BRAM_CLK_O     => BRAM_CLK_O,
-    BRAM_RST_O     => BRAM_RST_O
+    STATUS_O         => status,
+    LAST_O           => last_w,
+
+    BRAM_EN_O        => BRAM_EN_O,
+    BRAM_DATA_O      => BRAM_DATA_O,
+    BRAM_WEN_O       => BRAM_WEN_O,
+    BRAM_ADDR_O      => BRAM_ADDR_O,
+    BRAM_CLK_O       => BRAM_CLK_O,
+    BRAM_RST_O       => BRAM_RST_O
     );
 
 end behavioral;

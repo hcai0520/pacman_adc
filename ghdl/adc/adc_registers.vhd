@@ -25,20 +25,22 @@ entity adc_registers is
     
     C_REG_ADC_SCRATCH      : integer  := 16#300#; -- RW
     C_REG_ADC_ROA          : integer  := 16#304#; -- RO
-    C_VAL_ADC_ROA          : integer  := 16#1234ABCD#
+    C_VAL_ADC_ROA          : integer  := 16#1234ABCD#;
+    
+    C_REG_ADC_FAKE         : integer  := 16#400#  -- RW
     );
   port (
     ACLK	        : in std_logic;
     ARESETN	        : in std_logic;
 
     S_REGBUS_RB_RUPDATE : in  std_logic;
-    S_REGBUS_RB_RADDR	: in  std_logic_vector(C_RB_ADDR_WIDTH-1 downto 0);
-    S_REGBUS_RB_RDATA	: out std_logic_vector(C_RB_DATA_WIDTH-1 downto 0);
+    S_REGBUS_RB_RADDR	  : in  std_logic_vector(C_RB_ADDR_WIDTH-1 downto 0);
+    S_REGBUS_RB_RDATA	  : out std_logic_vector(C_RB_DATA_WIDTH-1 downto 0);
     S_REGBUS_RB_RACK    : out std_logic;
 
     S_REGBUS_RB_WUPDATE : in  std_logic;
-    S_REGBUS_RB_WADDR	: in  std_logic_vector(C_RB_ADDR_WIDTH-1 downto 0);
-    S_REGBUS_RB_WDATA	: in  std_logic_vector(C_RB_DATA_WIDTH-1 downto 0);
+    S_REGBUS_RB_WADDR	  : in  std_logic_vector(C_RB_ADDR_WIDTH-1 downto 0);
+    S_REGBUS_RB_WDATA	  : in  std_logic_vector(C_RB_DATA_WIDTH-1 downto 0);
     S_REGBUS_RB_WACK    : out std_logic;
 
     -- Enables
@@ -63,8 +65,8 @@ entity adc_registers is
     TESTPATTERN_CONFIG_B_O     : out std_logic_vector(C_RB_DATA_WIDTH-1 downto 0);
     --ADC_TRIG_CONFIG_O   : out std_logic_vector(C_RB_DATA_WIDTH-1 downto 0);
     --ADC_VALID_CONFIG_O  : out std_logic_vector(C_RB_DATA_WIDTH-1 downto 0);
-    BRAM_CONFIG_O       : out std_logic_vector(C_RB_DATA_WIDTH-1 downto 0)
-   
+    BRAM_CONFIG_O              : out std_logic_vector(C_RB_DATA_WIDTH-1 downto 0);
+    FAKE_ADC_O                 : out std_logic_vector(C_RB_DATA_WIDTH-1 downto 0) 
     );
 end entity adc_registers;
 
@@ -96,6 +98,9 @@ architecture behavioral of adc_registers is
 
   -- scratch registers
   signal scratch      : std_logic_vector(C_RB_DATA_WIDTH-1 downto 0) := (others => '0');
+
+  -- fake adc signal 
+  signal fake_adc     : std_logic_vector(C_RB_DATA_WIDTH-1 downto 0) := (others => '0');
 
 begin
   --inputs:
@@ -129,7 +134,7 @@ begin
   --ADC_TRIG_CONFIG_O  <= trig_config;
   --ADC_VALID_CONFIG_O <= valid_config;
   BRAM_CONFIG_O            <= bram_config;
-  
+  FAKE_ADC_O               <= fake_adc;
 
   -- Handle Read Request:
   process(clk,rst)
@@ -155,9 +160,6 @@ begin
             elsif (reg=C_REG_ADC_LOOK) then
               rdata <= ADC_LOOK_I;
               rack  <= '1';
-          --  elsif (reg=C_REG_RISING_COUNT) then
-          --    rdata <= RISING_COUNT_I;
-          --    rack  <= '1';
           --  elsif (reg=C_REG_FALLING_COUNT) then
           --    rdata <= FALLING_COUNT_I;
           --    rack  <= '1';
@@ -174,9 +176,9 @@ begin
             elsif (reg=C_REG_TP_CONFIG_B) then
               rdata <= test_pattern_config_b;
               rack  <= '1';
-            --elsif (reg=C_REG_ADC_TRIG_CONFIG) then
-            --  rdata <= trig_config;
-            --  rack  <= '1';
+            elsif (reg=C_REG_ADC_FAKE) then
+              rdata <= fake_adc;
+              rack  <= '1';
             --elsif (reg=C_REG_ADC_VALID_CONFIG) then
             --  rdata <= valid_config;
             --  rack  <= '1';
@@ -242,9 +244,9 @@ begin
             elsif (reg=C_REG_BRAM_CONFIG) then
               bram_config  <= wdata;
               wack         <= '1';
-    --        elsif (reg=C_REG_ADC_COMMANDS) then
-    --          commands     <= wdata;
-    --          wack         <= '1';
+            elsif (reg=C_REG_ADC_FAKE) then
+              fake_adc   <= wdata;
+              wack       <= '1';
             elsif (reg=C_REG_ENABLES) then
               enables      <= wdata;
               wack         <= '1';

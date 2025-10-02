@@ -19,7 +19,7 @@ architecture behaviour of adc_bram_tb is
     DATA_I         : in  std_logic_vector(ADC_DATA_WIDTH downto 0);
     BRAM_EN_I      : in std_logic; 
 
-
+    FAKE_ADC_I     : in std_logic_vector(C_RB_DATA_WIDTH-1 downto 0); 
     -- REGISTER
     CONFIG_I       : in  std_logic_vector(C_RB_DATA_WIDTH-1 downto 0);
     STATUS_O       : out std_logic_vector(C_RB_DATA_WIDTH-1 downto 0);
@@ -55,6 +55,7 @@ begin
       ARESETN       => aresetn,
       BRAM_EN_O     => bram_en,
       DATA_I        => data_i(12 downto 0),
+      FAKE_ADC_I    => x"00002003",
       BRAM_EN_I     => '1',
       CONFIG_I      => config,
       STATUS_O      => stat,
@@ -88,13 +89,13 @@ begin
   config_in : process
   begin
     wait for 18 ns;
-   -- config <= x"00010010";
+    config <= x"00001010";
    -- wait for 30 ns;
    -- config <= x"00011008";
    -- wait for 100 ns;
    -- config <= x"00012004";
    -- wait for 100 ns;
-    config <= x"00013002";
+   -- config <= x"00013002";
     wait;
   end process;
 

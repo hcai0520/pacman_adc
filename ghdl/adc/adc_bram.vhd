@@ -13,6 +13,8 @@ entity adc_bram is
     DATA_I         : in  std_logic_vector(ADC_DATA_WIDTH downto 0);
     BRAM_EN_I      : in std_logic; 
 
+    --Fake signal
+    FAKE_ADC_I     : in std_logic_vector(C_RB_DATA_WIDTH-1 downto 0); 
 
     -- REGISTER
     CONFIG_I       : in  std_logic_vector(C_RB_DATA_WIDTH-1 downto 0);
@@ -44,7 +46,9 @@ architecture behavioral of adc_bram is
 
   signal buff_size : std_logic_vector(10 downto 0) := (others => '0');
   signal packing   : std_logic_vector(3  downto 0) := (others => '0');
- 
+
+  signal data_in   : std_logic_vector(ADC_DATA_WIDTH downto 0) := (others => '0');
+  signal fake_adc  : std_logic_vector(C_RB_DATA_WIDTH-1 downto 0); 
 begin
   clk         <= ACLK;
   rst         <= not ARESETN;
@@ -65,7 +69,21 @@ begin
 
   STATUS_O    <= stat;
   LAST_O      <= last;
-
+  
+  fake_adc  <= FAKE_ADC_I;
+  
+  process(clk,rst)
+    begin
+    if (rst = '1') then
+    data_in <= (others => '0');
+    elsif (rising_edge(clk)) then
+      if (fake_adc(13) = '1') then
+        data_in <= fake_adc (12 downto 0);
+      else
+        data_in <= DATA_I;
+      end if;        
+    end if;
+  end process;
   process(clk,rst)
   begin
     if (rst = '1') then
@@ -74,12 +92,12 @@ begin
       addr     <= (others => '0');
     elsif (rising_edge(clk)) then
 --     if (packing = x"0" or valid = '0') then -- reset state
-      if (packing = x"0") then -- reset state
+      if (packing = x"0" ) then -- reset state
         wen      <= (others => '0');
         data     <= (others => '0');
         addr     <= (others => '0');
       elsif (packing = x"1") then
-        data(12 downto 0)  <= DATA_I;
+        data(12 downto 0)  <= data_in;
         data(31 downto 13) <= (others => '0');
         wen                <= (others => '1');
         if unsigned(buff_size) /= 0 and unsigned(addr) >= unsigned(buff_size) then
@@ -88,9 +106,9 @@ begin
           addr <= std_logic_vector(unsigned(addr) + 1);
         end if;
       elsif (packing = x"2") then -- bit packing (no loss of data)
-        data(12 downto 0)  <= DATA_I;
+        data(12 downto 0)  <= data_in;
         data(15 downto 13) <= (others => '0');
-        data(28 downto 16) <= DATA_I;
+        data(28 downto 16) <= data_in;
         data(31 downto 29)  <= (others => '0');
         if (wen = x"3") then
           wen <= x"C";
@@ -103,10 +121,10 @@ begin
           end if;
         end if;
       elsif (packing = x"3") then --very packed (loss of 4 bits of data + overflow)
-        data(7  downto  0) <= DATA_I(11 downto 4);
-        data(15 downto  8) <= DATA_I(11 downto 4);
-        data(23 downto 16) <= DATA_I(11 downto 4);
-        data(31 downto 24) <= DATA_I(11 downto 4);
+        data(7  downto  0) <= data_in(11 downto 4);
+        data(15 downto  8) <= data_in(11 downto 4);
+        data(23 downto 16) <= data_in(11 downto 4);
+        data(31 downto 24) <= data_in(11 downto 4);
         if (wen = x"1") then
           wen <= x"2";
         elsif (wen = x"2") then
