@@ -9,8 +9,8 @@ use work.common.all;
 
 entity adc_test_patterns is
   port(
-    ACLK             : in  std_logic;
-    ARESETN          : in  std_logic;
+    CLK_I             : in  std_logic;
+    RST_I          : in  std_logic;
   
     --Test patterns (13 bits)
     DATA_O       : out std_logic_vector((ADC_DATA_WIDTH +1)-1 downto 0) := (others => '0');
@@ -34,8 +34,8 @@ architecture behavioral of adc_test_patterns is
 
 
 begin
-  clk      <= ACLK;
-  rst      <= not ARESETN;
+  clk      <= CLK_I;
+  rst      <= RST_I;
   wait_t   <= CONFIG_A_I(31 downto 16);
   step     <= CONFIG_A_I(12 downto  0);
   higher   <= CONFIG_B_I(28 downto 16);

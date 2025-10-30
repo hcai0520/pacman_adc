@@ -12,8 +12,8 @@ end adc_unit_tb;
 architecture behaviour of adc_unit_tb is
   component adc_unit is
     port (
-      ACLK	          : in std_logic;
-      ARESETN	          : in std_logic;
+      CLK_I	          : in std_logic;
+      RST_I	          : in std_logic;
 
       -- REGBUS Ports
       S_REGBUS_RB_RUPDATE : in  std_logic;
@@ -43,8 +43,8 @@ architecture behaviour of adc_unit_tb is
   end component;
   
   signal count     : integer := 0;
-  signal aclk      : std_logic;
-  signal aresetn   : std_logic;
+  signal clk       : std_logic;
+  signal rst       : std_logic;
 
   -- regbus 
   -- read signals:
@@ -77,10 +77,10 @@ architecture behaviour of adc_unit_tb is
 
 begin
   uut: adc_unit port map (
-    ADC_EN_O       => adc_en,
-    ADC_CLK_O      => adc_clk,
-    ACLK           => aclk,
-    ARESETN        => aresetn,
+    ADC_EN_O            => adc_en,
+    ADC_CLK_O           => adc_clk,
+    CLK_I               => clk,
+    RST_I               => rst,
     S_REGBUS_RB_RUPDATE => rupdate,
     S_REGBUS_RB_RADDR   => raddr,
     S_REGBUS_RB_RDATA   => rdata,
@@ -102,18 +102,18 @@ begin
 
   aresetn_process : process
   begin
-    aresetn <= '0';
+    rst <= '1';
     wait for 12 ns;
-    aresetn <= '1';    
+    rst <= '0';    
     wait;
   end process;
 
-  aclk_process : process
+  clk_process : process
   begin
     count <= count + 1;    
-    aclk <= '1';
+    clk <= '1';
     wait for 5 ns;
-    aclk <= '0';
+    clk <= '0';
     wait for 5 ns;
   end process;
 
@@ -121,25 +121,33 @@ begin
 write_process : process
   begin
     wait for 1 ns;
-    wait for 20 ns; -- Turn BRAM and ADC on
+    wait for 10 ns; --acquire in
     waddr   <= x"D000";
-    wdata   <= x"00000003";
+    wdata   <= x"00000002";
     wupdate <= '1';
     wait for 10 ns; 
-    waddr   <= x"D210"; --tells BRAM to use 8 addresses
-    wdata   <= x"00001008"; -- with 1 ADC word per address
+    waddr   <= x"D000";
+    wdata   <= x"00000000";
     wupdate <= '1';
-    wait for 10 ns;  
+    wait for 20 ns;
+    waddr   <= x"D210"; --tells BRAM to use 10 addresses
+    wdata   <= x"00000008"; -- with 1 ADC word per address
+    wupdate <= '1';
+    wait for 20 ns;  
     waddr   <= x"D204"; --sets the bounds on the test patterns(doesn't use them yet)
     wdata   <= x"110010A0"; -- lower of 0x700 higher of 0x900
     wupdate <= '1';
-    wait for 80 ns; 
+    wait for 20 ns; 
     waddr   <= x"D200"; -- starts using test patterns
     wdata   <= x"0001BFF0"; -- wait of 1 clockcycle and step of 0x20
     wupdate <= '1';
-    wait for 50 ns;
-    waddr   <= x"D210"; -- tells bram to use 4 addresses
-    wdata   <= x"00002004"; -- with 2 ADC words per address
+    wait for 20 ns;
+    waddr   <= x"D208"; --trig mode
+    wdata   <= x"00050001";
+    wupdate <= '1';
+    wait for 20 ns;
+    waddr   <= x"D20C"; -- set lower and upper boundary
+    wdata   <= x"08000080"; 
     wupdate <= '1';
     wait;
   end process;
@@ -148,12 +156,12 @@ write_process : process
   begin
     raddr   <= x"0000";
     rupdate <= '0';
-    wait for 42 ns;
-    raddr   <= x"D100"; --reads look
+    wait for 12 ns;
+    raddr   <= x"D000"; --reads look
     rupdate <= '1';     --should be one clockcycle ahead of output data
-    wait for 30 ns;
+    wait for 60 ns;
  
-    raddr   <= x"D110"; -- what are we write out
+    raddr   <= x"D104"; -- what are we write out
     rupdate <= '1';     -- should be one clockcycle behind output data
  
     wait;
@@ -274,22 +282,22 @@ write_process : process
     wait for 10 ns;
     di     <= x"666";
     diof   <= '0';
-    wait;
+    --wait;
   end process;
 
 output_process : process
     variable l : line;
   begin
     --wait for 1 ns;
-    if (count < 35) then
+    if (count < 70) then
       wait for 10 ns;
     else
       wait;
     end if;
     write (l, String'("c: "));
     write (l, count, left, 4);
-    --write (l, String'("aclk: "));
-    --write (l, aclk);
+    write (l, String'("clk: "));
+    write (l, clk);
     --write (l, String'("valid: "));
     --write (l, valid);
   
@@ -301,11 +309,13 @@ output_process : process
     hwrite (l, addr);
     write (l, String'(" | bram_wen_o: 0x"));
     hwrite (l, wen);
-    --write (l, String'(" | adc_status_o: 0x"));
-    --hwrite (l, stat);
+    write (l, String'(" | bram_en_o: "));
+    write (l,  b_en);
+    write (l, String'(" | read: 0x"));
+    write (l, rdata);
     --write (l, String'(" | adc_last_o: 0x"));
     --hwrite (l, last);
-    if (aresetn = '0') then
+    if (rst = '1') then
       write (l, String'(" (RESET)"));
     end if;
     writeline(output, l);
